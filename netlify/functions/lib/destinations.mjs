@@ -76,3 +76,38 @@ export function detectDestination(text) {
   }
   return best;
 }
+
+// ---- Regions ----
+export const REGION_LABELS = {
+  florida: 'Florida',
+  southeast: 'Southeast US coast (SC / NC / VA / AL)',
+  mexico: 'Mexico',
+  bahamas: 'Bahamas',
+  caribbean: 'Caribbean islands',
+  centralamerica: 'Central America (Costa Rica / Belize)',
+  hawaii: 'Hawaii',
+  otherus: 'Other US (inland)',
+};
+
+function labelToRegion(l) {
+  if (/, FL\b| FL \(|Florida/.test(l)) return 'florida';
+  if (/, SC\b|, NC\b|, VA\b|, AL\b/.test(l)) return 'southeast';
+  if (/Mexico/.test(l)) return 'mexico';
+  if (/Bahamas/.test(l)) return 'bahamas';
+  if (/Costa Rica|Belize/.test(l)) return 'centralamerica';
+  if (/Hawaii/.test(l)) return 'hawaii';
+  if (/Las Vegas/.test(l)) return 'otherus';
+  return 'caribbean';
+}
+for (const d of DESTINATIONS) d.region = labelToRegion(d.label);
+
+// Count DISTINCT destinations mentioned — a storefront/marketplace homepage
+// mentions many different places; a single property's page mentions one or two.
+export function countDistinctDestinations(text) {
+  const lower = text.toLowerCase();
+  let count = 0;
+  for (const dest of DESTINATIONS) {
+    if (dest.names.some(n => lower.includes(n))) count++;
+  }
+  return count;
+}

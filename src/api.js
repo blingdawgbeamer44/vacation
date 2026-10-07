@@ -17,9 +17,21 @@ export const DEFAULT_CRITERIA = {
   requireAdultsOnly: true,
   requireChef: true,
   requireAprilSwim: true,
+  allowedRegions: [], // empty = anywhere
 };
 
+export const REGIONS = [
+  { id: 'florida', label: 'Florida', longFlight: false },
+  { id: 'southeast', label: 'Southeast US coast (SC / NC / VA / AL)', longFlight: false },
+  { id: 'mexico', label: 'Mexico', longFlight: false },
+  { id: 'bahamas', label: 'Bahamas', longFlight: false },
+  { id: 'caribbean', label: 'Caribbean islands', longFlight: false },
+  { id: 'centralamerica', label: 'Central America (Costa Rica / Belize)', longFlight: true, flightNote: '~4–4.5 hour flights' },
+  { id: 'hawaii', label: 'Hawaii', longFlight: true, flightNote: '~9+ hour flights' },
+];
+
 export const CRITERIA_DISPLAY = [
+  { id: 'region', key: 'requireRegion', label: 'In an allowed region' },
   { id: 'flights', key: 'requireFlights', label: 'Nonstop flight within limit (ATL/CLT)' },
   { id: 'oceanfront', key: 'requireOceanfront', label: 'Oceanfront / beachfront' },
   { id: 'privatePool', key: 'requirePrivatePool', label: 'Private pool' },

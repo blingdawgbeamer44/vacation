@@ -3,7 +3,7 @@
 //   'yes'     — the page explicitly supports the criterion
 //   'no'      — the page explicitly contradicts the criterion
 //   'unknown' — the page doesn't say (NEVER guessed)
-import { detectDestination } from './destinations.mjs';
+import { detectDestination, countDistinctDestinations, REGION_LABELS } from './destinations.mjs';
 
 export function htmlToText(html) {
   return html
@@ -220,10 +220,28 @@ export function analyzeText(rawText, criteria, meta = {}) {
     checks.aprilSwim = { status: 'unknown', evidence: 'Destination not identified.' };
   }
 
-  return { checks, destination: dest ? dest.label : null };
+  // --- Region filter (only when the user limited regions) ---
+  const allowed = Array.isArray(criteria.allowedRegions) ? criteria.allowedRegions : [];
+  if (allowed.length > 0) {
+    const allowedNames = allowed.map(r => REGION_LABELS[r] || r).join(', ');
+    if (dest) {
+      checks.region = allowed.includes(dest.region)
+        ? { status: 'yes', evidence: `${dest.label} is in your allowed regions (${allowedNames}).` }
+        : { status: 'no', evidence: `This property is in ${REGION_LABELS[dest.region] || dest.region} — your criteria currently allow only: ${allowedNames}.` };
+    } else {
+      checks.region = { status: 'unknown', evidence: 'Couldn\'t determine the destination, so the region can\'t be checked.' };
+    }
+  }
+
+  // --- Marketplace/storefront detection ---
+  const distinctDests = countDistinctDestinations(text);
+  const marketplace = distinctDests >= 4;
+
+  return { checks, destination: dest ? dest.label : null, marketplace, distinctDests };
 }
 
 export const CRITERIA_LABELS = {
+  region: { label: 'In an allowed region', key: 'requireRegion' },
   flights: { label: 'Nonstop flight within limit (ATL/CLT)', key: 'requireFlights' },
   oceanfront: { label: 'Oceanfront / beachfront', key: 'requireOceanfront' },
   privatePool: { label: 'Private pool', key: 'requirePrivatePool' },

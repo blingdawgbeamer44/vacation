@@ -16,6 +16,7 @@ const DEFAULT_CRITERIA = {
   requireAdultsOnly: true,
   requireChef: true,
   requireAprilSwim: true,
+  allowedRegions: [],
 };
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36';
@@ -94,7 +95,8 @@ export default async function handler(req) {
     const text = htmlToText(html);
     const thin = text.length < 400;
 
-    const { checks, destination } = analyzeText(text, criteria, { title, url: finalUrl });
+    criteria.requireRegion = Array.isArray(criteria.allowedRegions) && criteria.allowedRegions.length > 0;
+    const { checks, destination, marketplace } = analyzeText(text, criteria, { title, url: finalUrl });
     const verdict = overallVerdict(checks, criteria);
 
     return new Response(JSON.stringify({
@@ -105,6 +107,7 @@ export default async function handler(req) {
       destination,
       checks,
       verdict,
+      marketplace: !!marketplace,
       textLength: text.length,
       thin,
       thinWarning: thin ? 'This page loaded almost no readable text — it probably builds its content with JavaScript (common on big platforms like Airbnb/VRBO). Results below are unreliable; treat everything as unverified.' : null,

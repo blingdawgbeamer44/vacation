@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  DEFAULT_CRITERIA, CRITERIA_DISPLAY, REJECTION_REASONS,
+  DEFAULT_CRITERIA, CRITERIA_DISPLAY, REJECTION_REASONS, REGIONS,
   apiStatus, apiSetPin, apiGetAll, apiSave, apiAnalyze, domainOf, localCache,
 } from './api.js';
 
@@ -34,7 +34,7 @@ export default function App() {
       } catch {
         // Server unreachable — fall back to local cache so the app still works
         setServerOk(false);
-        setCriteria(localCache.get('criteria', DEFAULT_CRITERIA));
+        setCriteria({ ...DEFAULT_CRITERIA, ...localCache.get('criteria', {}) });
         setBlocklist(localCache.get('blocklist', []));
         setHistory(localCache.get('history', []));
         setPhase('ready');
@@ -48,7 +48,7 @@ export default function App() {
       if (data.ok) {
         setPin(usePin);
         localCache.set('pin', usePin);
-        setCriteria(data.criteria || localCache.get('criteria', DEFAULT_CRITERIA));
+        setCriteria({ ...DEFAULT_CRITERIA, ...(data.criteria || localCache.get('criteria', {})) });
         setBlocklist(data.blocklist || []);
         setHistory(data.history || []);
         setPhase('ready');
@@ -300,6 +300,12 @@ function ResultPanel({ result, criteria, checkin, checkout, onReject }) {
     : '❓ NEEDS REVIEW — nothing failed, but some items couldn\'t be verified from the page';
   return (
     <div className="card">
+      <div className="domain-banner">🌐 {result.domain}</div>
+      {result.marketplace && (
+        <div className="alert warn">
+          ⚠️ <strong>This looks like a site's front page listing MANY different properties</strong> — the results below mix them all together. For a real answer, paste one specific property's listing page.
+        </div>
+      )}
       <div className={`verdict ${v}`}>{vText}
         {result.destination && <small>📍 {result.destination}</small>}
         {(checkin || checkout) && <small>🗓️ Your dates: {checkin || '?'} → {checkout || '?'} (availability/price for these dates must be confirmed with the property)</small>}
@@ -308,7 +314,7 @@ function ResultPanel({ result, criteria, checkin, checkout, onReject }) {
       {CRITERIA_DISPLAY.map(def => {
         const c = result.checks[def.id];
         if (!c) return null;
-        const required = !!criteria[def.key];
+        const required = def.id === 'region' ? true : !!criteria[def.key];
         const mark = MARKS[c.status] || MARKS.unknown;
         return (
           <div className={`criterion ${required ? '' : 'skipped'}`} key={def.id}>
@@ -392,6 +398,41 @@ function CriteriaTab({ criteria, onSave }) {
           </label>
         </div>
       ))}
+      <h3>Where are we willing to go?</h3>
+      <p className="muted">Leave "Anywhere" checked to skip this filter, or pick specific regions and everything outside them fails the check.</p>
+      <div className="reason-grid">
+        <label className={`reason-option ${(c.allowedRegions || []).length === 0 ? 'checked-ok' : ''}`}>
+          <input type="checkbox" checked={(c.allowedRegions || []).length === 0}
+            onChange={() => upd('allowedRegions', [])} />
+          Anywhere (no region filter)
+        </label>
+        {REGIONS.map(r => {
+          const sel = (c.allowedRegions || []).includes(r.id);
+          return (
+            <label key={r.id} className={`reason-option ${sel ? 'checked-ok' : ''}`}>
+              <input type="checkbox" checked={sel} onChange={() => {
+                const cur = c.allowedRegions || [];
+                upd('allowedRegions', sel ? cur.filter(x => x !== r.id) : [...cur, r.id]);
+              }} />
+              {r.label}
+            </label>
+          );
+        })}
+      </div>
+      {(c.allowedRegions || []).some(id => {
+        const r = REGIONS.find(x => x.id === id);
+        return r && r.longFlight && c.maxFlightHours < (id === 'hawaii' ? 9 : 4.2);
+      }) && (
+        <div className="alert warn">
+          ⚠️ Heads-up: {(c.allowedRegions || []).filter(id => {
+            const r = REGIONS.find(x => x.id === id);
+            return r && r.longFlight && c.maxFlightHours < (id === 'hawaii' ? 9 : 4.2);
+          }).map(id => {
+            const r = REGIONS.find(x => x.id === id);
+            return `${r.label} usually needs ${r.flightNote}`;
+          }).join('; ')} — longer than your {c.maxFlightHours}-hour flight limit. Properties there will fail the flight check unless you raise the limit below.
+        </div>
+      )}
       <h3>Numbers</h3>
       <div className="row">
         <label className="field">Max flight time (hours)

@@ -1,0 +1,19 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Deploy site to Netlify
+        run: |
+          npx -y @netlify/mcp@latest --site-id 7db04604-85ce-4916-8f68-fc4f61395c37 --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..yREiIUzZSJc63T_H.D16nQ89WQlOw4BJNOtSPliZbdta3aComIMqi2KPkVUB3dhSIu_JbvLPnGphFwRClIjs_hqJOlhL_sNfGQJaZk6cofEBVMp215QOobcy4yv4xlX1VUlQXEWkKVBHoygQhp9iNEF-epiKZupbxkl4Ops2Rvdh9WVNyC6IZfXooLPQx2CDxSLYn_R6H0RY2NhqD4cyRNw8MnDt5MY74IDmc5oqjFSU1xvcfsrXoN8YnNXFPqXFsEl4gyjahgwQpD4b71iPvIcSVZF3pfz3HDCy-52Lx9nqU31aGkQ1ps_ZkG47vjHur_JVWC8q9eeJgvgkKK7cK62H24Dnn0cz6WWPs4w6Lm0r8NQpe-iV2RNpwhgdrf1dVm4KGalRdhI1hGail_WiDMU1p.ZLbYxG3d0tkyme_QC1nsuA"
